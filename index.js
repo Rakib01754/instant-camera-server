@@ -21,14 +21,26 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run() {
     try {
         const categoryCollection = client.db('instantCamera').collection('categories')
+        const userCollection = client.db('instantCamera').collection('users')
 
         // get categories from database 
         app.get('/categories', async (req, res) => {
             const query = {};
             const categories = await categoryCollection.find(query).toArray();
             res.send(categories)
-        })
-    } finally {
+        });
+        // send user data to database 
+
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            const result = await userCollection.insertOne(user);
+            console.log(result)
+            res.send(result)
+        });
+
+
+    }
+    finally {
         // await client.close();
     }
 }
