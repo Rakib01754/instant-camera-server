@@ -38,6 +38,14 @@ async function run() {
             res.send(result)
         });
 
+        // get user details by email 
+        app.get('/user', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email }
+            const user = await userCollection.findOne(query);
+            res.send(user);
+        })
+
 
     }
     finally {
