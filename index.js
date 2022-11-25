@@ -22,6 +22,7 @@ async function run() {
     try {
         const categoryCollection = client.db('instantCamera').collection('categories')
         const userCollection = client.db('instantCamera').collection('users')
+        const productCollection = client.db('instantCamera').collection('products')
 
         // get categories from database 
         app.get('/categories', async (req, res) => {
@@ -29,10 +30,22 @@ async function run() {
             const categories = await categoryCollection.find(query).toArray();
             res.send(categories)
         });
-        // send user data to database 
 
+        // get products from database 
+        app.get('/products', async (req, res) => {
+            const query = {}
+            const products = await productCollection.find(query).toArray();
+            res.send(products);
+        })
+        // send user data to database 
         app.post('/users', async (req, res) => {
             const user = req.body;
+            const userEmail = user.email;
+            const emailQuery = { email: userEmail }
+            const alreadyRegistred = await userCollection.findOne(emailQuery);
+            if (alreadyRegistred) {
+                return
+            }
             const result = await userCollection.insertOne(user);
             console.log(result)
             res.send(result)
