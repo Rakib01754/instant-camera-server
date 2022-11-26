@@ -36,6 +36,16 @@ async function run() {
             const query = {}
             const products = await productCollection.find(query).toArray();
             res.send(products);
+        });
+
+        // get products by categoryid 
+        app.get('/products/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = {
+                categoryId: id
+            }
+            const selectedProducts = await productCollection.find(query).toArray();
+            res.send(selectedProducts)
         })
         // send user data to database 
         app.post('/users', async (req, res) => {
@@ -57,6 +67,12 @@ async function run() {
             const query = { email: email }
             const user = await userCollection.findOne(query);
             res.send(user);
+        });
+        //post added products data to database
+        app.post('/products', async (req, res) => {
+            const data = req.body;
+            const result = await productCollection.insertOne(data);
+            res.send(result);
         })
 
 
