@@ -39,7 +39,12 @@ async function run() {
             const products = await productCollection.find(query).toArray();
             res.send(products);
         });
-
+        //get advertised product by query
+        app.get('/advertised', async (req, res) => {
+            const query = { advertise: 'true' }
+            const data = await productCollection.find(query).toArray();
+            res.send(data)
+        })
         // get products by categoryid 
         app.get('/products/:id', async (req, res) => {
             const id = req.params.id;
@@ -94,6 +99,20 @@ async function run() {
             const id = req.params.id;
             const query = { _id: ObjectId(id) }
             const result = await productCollection.deleteOne(query);
+            res.send(result)
+        })
+
+        // advertise product by id 
+        app.put('/product/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) }
+            const options = { upsert: true }
+            const updateDoc = {
+                $set: {
+                    advertise: `true`
+                }
+            };
+            const result = await productCollection.updateOne(filter, updateDoc, options)
             res.send(result)
         })
 
