@@ -1,7 +1,7 @@
 const express = require('express')
 const app = express();
 const cors = require('cors')
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.port || 5000;
 require('dotenv').config()
 
@@ -20,9 +20,11 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 
 async function run() {
     try {
+        // databse collections 
         const categoryCollection = client.db('instantCamera').collection('categories')
         const userCollection = client.db('instantCamera').collection('users')
         const productCollection = client.db('instantCamera').collection('products')
+        const bookingCollection = client.db('instantCamera').collection('bookings')
 
         // get categories from database 
         app.get('/categories', async (req, res) => {
@@ -46,20 +48,14 @@ async function run() {
             }
             const selectedProducts = await productCollection.find(query).toArray();
             res.send(selectedProducts)
-        })
-        // send user data to database 
-        app.post('/users', async (req, res) => {
-            const user = req.body;
-            const userEmail = user.email;
-            const emailQuery = { email: userEmail }
-            const alreadyRegistred = await userCollection.findOne(emailQuery);
-            if (alreadyRegistred) {
-                return
-            }
-            const result = await userCollection.insertOne(user);
-            console.log(result)
-            res.send(result)
         });
+        // get products data by email query 
+        app.get('/myproducts', async (req, res) => {
+            const queryEmail = req.query.email;
+            const query = { email: queryEmail };
+            const filtereProduct = await productCollection.find(query).toArray();
+            res.send(filtereProduct)
+        })
 
         // get user details by email 
         app.get('/user', async (req, res) => {
@@ -73,7 +69,34 @@ async function run() {
             const data = req.body;
             const result = await productCollection.insertOne(data);
             res.send(result);
+        });
+        // post bookings data to database 
+        app.post('/bookings', async (req, res) => {
+            const data = req.body;
+            const result = await bookingCollection.insertOne(data);
+            res.send(result);
+        });
+        // send user data to database 
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            const userEmail = user.email;
+            const emailQuery = { email: userEmail }
+            const alreadyRegistred = await userCollection.findOne(emailQuery);
+            if (alreadyRegistred) {
+                return
+            }
+            const result = await userCollection.insertOne(user);
+            console.log(result)
+            res.send(result)
+        });
+        // delete product by id 
+        app.delete('/product/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await productCollection.deleteOne(query);
+            res.send(result)
         })
+
 
 
     }
