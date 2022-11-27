@@ -69,6 +69,43 @@ async function run() {
             const user = await userCollection.findOne(query);
             res.send(user);
         });
+
+        // get all sellers from database 
+        app.get('/allsellers', async (req, res) => {
+            const query = { userType: 'Seller' }
+            const sellers = await userCollection.find(query).toArray();
+            res.send(sellers)
+        })
+
+        //get all buyers from database 
+        app.get('/allbuyers', async (req, res) => {
+            const query = { userType: 'Buyer' }
+            const buyers = await userCollection.find(query).toArray();
+            res.send(buyers)
+        });
+
+        // verify admin 
+        app.get('/users/admin/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email }
+            const user = await userCollection.findOne(query);
+            res.send({ isAdmin: user?.userType === 'Admin' })
+        });
+        //verify seller
+        app.get('/users/seller/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email }
+            const user = await userCollection.findOne(query);
+            res.send({ isSeller: user?.userType === 'Seller' })
+        });
+        // verify buyer 
+        app.get('/users/buyer/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email }
+            const user = await userCollection.findOne(query);
+            res.send({ isBuyer: user?.userType === 'Buyer' })
+        });
+
         //post added products data to database
         app.post('/products', async (req, res) => {
             const data = req.body;
@@ -100,7 +137,37 @@ async function run() {
             const query = { _id: ObjectId(id) }
             const result = await productCollection.deleteOne(query);
             res.send(result)
+        });
+        // delete buyer by id
+        app.delete('/buyer/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await userCollection.deleteOne(query)
+            res.send(result)
+        });
+        // delete seller by id
+        app.delete('/seller/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await userCollection.deleteOne(query)
+            res.send(result)
+        });
+
+        // verify seller by
+        app.put('/seller/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) }
+            const options = { upsert: true }
+            const updateDoc = {
+                $set: {
+                    verified: `true`
+                }
+            };
+            const result = await userCollection.updateOne(filter, updateDoc, options)
+            console.log(result)
+            res.send(result)
         })
+
 
         // advertise product by id 
         app.put('/product/:id', async (req, res) => {
