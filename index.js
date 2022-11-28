@@ -121,6 +121,14 @@ async function run() {
             res.send({ isBuyer: user?.userType === 'Buyer' })
         });
 
+        // load orders by email 
+        app.get('/myorders', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email }
+            const orders = await bookingCollection.find(query).toArray()
+            res.send(orders)
+        })
+
         //send added products data to database
         app.post('/products', async (req, res) => {
             const data = req.body;
@@ -160,6 +168,13 @@ async function run() {
             const result = await userCollection.deleteOne(query)
             res.send(result)
         });
+        // delete bookings by id 
+        app.delete('/bookings/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await bookingCollection.deleteOne(query)
+            res.send(result)
+        })
         // delete seller by id
         app.delete('/seller/:id', async (req, res) => {
             const id = req.params.id;
