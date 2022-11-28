@@ -4,11 +4,15 @@ const cors = require('cors')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.port || 5000;
 require('dotenv').config()
+// payment
+const stripe = require("stripe")(process.env.PK);
+
 
 
 // middlewares
 app.use(cors())
 app.use(express.json())
+
 
 
 
@@ -25,6 +29,7 @@ async function run() {
         const userCollection = client.db('instantCamera').collection('users')
         const productCollection = client.db('instantCamera').collection('products')
         const bookingCollection = client.db('instantCamera').collection('bookings')
+        const paymentCollection = client.db('instantCamera').collection('payments')
 
         // get categories from database 
         app.get('/categories', async (req, res) => {
@@ -32,6 +37,7 @@ async function run() {
             const categories = await categoryCollection.find(query).toArray();
             res.send(categories)
         });
+
 
         // get products from database 
         app.get('/products', async (req, res) => {
@@ -127,8 +133,15 @@ async function run() {
             const query = { email: email }
             const orders = await bookingCollection.find(query).toArray()
             res.send(orders)
-        })
+        });
+        //payment
 
+        app.get("/dashboard/payment/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const data = await bookingCollection.findOne(query);
+            res.send(data);
+        });
         //send added products data to database
         app.post('/products', async (req, res) => {
             const data = req.body;
@@ -154,6 +167,7 @@ async function run() {
             console.log(result)
             res.send(result)
         });
+
         // delete product by id 
         app.delete('/product/:id', async (req, res) => {
             const id = req.params.id;
@@ -234,6 +248,59 @@ async function run() {
             const result = await productCollection.updateOne(filter, updateDoc, options)
             res.send(result)
         });
+        // payment 
+        app.post("/create-payment-intent", async (req, res) => {
+            const booking = req.body;
+            const price = booking.price;
+            const amount = price * 100;
+            console.log(amount);
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                payment_method_types: ["card"],
+            });
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            });
+        });
+        app.post("/payments", async (req, res) => {
+            const payment = req.body;
+            const result = await paymentCollection.insertOne(payment);
+            const id = payment.bookingId;
+            const filter = { _id: ObjectId(id) };
+            const updatedDoc = {
+                $set: {
+                    paid: true,
+                    transaction_id: payment.transaction_id,
+                },
+            };
+
+            //product update
+            const productId = { _id: ObjectId(payment?.productId) };
+            const updatedproduct = {
+                $set: {
+                    paid: true,
+                },
+            };
+            //product update end
+
+            const updateResult = await bookingCollection.updateOne(
+                filter,
+                updatedDoc
+            );
+            const updateProduct = await productCollection.updateOne(
+                productId,
+                updatedproduct
+            );
+            res.send(result);
+        });
+
+        app.get('/verifiedseller', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email }
+            const result = await userCollection.findOne(query)
+            res.send(result)
+        })
 
 
 
