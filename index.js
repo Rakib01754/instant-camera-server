@@ -44,7 +44,22 @@ async function run() {
             const query = { advertise: 'true' }
             const data = await productCollection.find(query).toArray();
             res.send(data)
+        });
+
+        //get advertised details product by id
+        app.get('/advertisement/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: ObjectId(id) }
+            const result = await productCollection.findOne(query);
+            res.send(result)
         })
+        //get reported product by query
+        app.get('/reported', async (req, res) => {
+            const query = { reported: 'true' }
+            const data = await productCollection.find(query).toArray();
+            res.send(data)
+        });
+
         // get products by categoryid 
         app.get('/products/:id', async (req, res) => {
             const id = req.params.id;
@@ -106,13 +121,13 @@ async function run() {
             res.send({ isBuyer: user?.userType === 'Buyer' })
         });
 
-        //post added products data to database
+        //send added products data to database
         app.post('/products', async (req, res) => {
             const data = req.body;
             const result = await productCollection.insertOne(data);
             res.send(result);
         });
-        // post bookings data to database 
+        // send bookings data to database 
         app.post('/bookings', async (req, res) => {
             const data = req.body;
             const result = await bookingCollection.insertOne(data);
@@ -152,6 +167,14 @@ async function run() {
             const result = await userCollection.deleteOne(query)
             res.send(result)
         });
+        // delete reported product 
+        app.delete('/products/reported/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await productCollection.deleteOne(query)
+            res.send(result)
+        });
+
 
         // verify seller by
         app.put('/seller/:id', async (req, res) => {
@@ -170,7 +193,7 @@ async function run() {
 
 
         // advertise product by id 
-        app.put('/product/:id', async (req, res) => {
+        app.put('/advertise/:id', async (req, res) => {
             const id = req.params.id;
             const filter = { _id: ObjectId(id) }
             const options = { upsert: true }
@@ -181,7 +204,21 @@ async function run() {
             };
             const result = await productCollection.updateOne(filter, updateDoc, options)
             res.send(result)
-        })
+        });
+
+        // report  product by id 
+        app.put('/product/report/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) }
+            const options = { upsert: true }
+            const updateDoc = {
+                $set: {
+                    reported: `true`
+                }
+            };
+            const result = await productCollection.updateOne(filter, updateDoc, options)
+            res.send(result)
+        });
 
 
 
