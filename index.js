@@ -1,6 +1,7 @@
 const express = require('express')
 const app = express();
 const cors = require('cors')
+const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.port || 5000;
 require('dotenv').config()
@@ -12,6 +13,23 @@ const stripe = require("stripe")(process.env.PK);
 // middlewares
 app.use(cors())
 app.use(express.json())
+
+// jwt verification 
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send({ message: 'unauthorized access' })
+    }
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+        if (err) {
+            return res.status(403).send({ message: 'unauthorized access' })
+        }
+        req.decoded = decoded;
+        next();
+    })
+
+}
 
 
 
@@ -30,6 +48,13 @@ async function run() {
         const productCollection = client.db('instantCamera').collection('products')
         const bookingCollection = client.db('instantCamera').collection('bookings')
         const paymentCollection = client.db('instantCamera').collection('payments')
+
+        // send jwt from client side 
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN, { expiresIn: '1d' })
+            res.send({ token })
+        })
 
         // get categories from database 
         app.get('/categories', async (req, res) => {
@@ -60,7 +85,7 @@ async function run() {
             res.send(result)
         })
         //get reported product by query
-        app.get('/reported', async (req, res) => {
+        app.get('/reported', verifyJWT, async (req, res) => {
             const query = { reported: 'true' }
             const data = await productCollection.find(query).toArray();
             res.send(data)
@@ -76,7 +101,7 @@ async function run() {
             res.send(selectedProducts)
         });
         // get products data by email query 
-        app.get('/myproducts', async (req, res) => {
+        app.get('/myproducts', verifyJWT, async (req, res) => {
             const queryEmail = req.query.email;
             const query = { email: queryEmail };
             const filtereProduct = await productCollection.find(query).toArray();
@@ -92,14 +117,14 @@ async function run() {
         });
 
         // get all sellers from database 
-        app.get('/allsellers', async (req, res) => {
+        app.get('/allsellers', verifyJWT, async (req, res) => {
             const query = { userType: 'Seller' }
             const sellers = await userCollection.find(query).toArray();
             res.send(sellers)
         })
 
         //get all buyers from database 
-        app.get('/allbuyers', async (req, res) => {
+        app.get('/allbuyers', verifyJWT, async (req, res) => {
             const query = { userType: 'Buyer' }
             const buyers = await userCollection.find(query).toArray();
             res.send(buyers)
@@ -128,7 +153,7 @@ async function run() {
         });
 
         // load orders by email 
-        app.get('/myorders', async (req, res) => {
+        app.get('/myorders', verifyJWT, async (req, res) => {
             const email = req.query.email;
             const query = { email: email }
             const orders = await bookingCollection.find(query).toArray()
